@@ -12,7 +12,7 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
-  { name: "Buscar Menções", href: "/mentions", icon: Search },
+  { name: "Busca Personalizada", href: "/search", icon: Search },
   { name: "Análise de Sentimento", href: "/sentiment", icon: Heart },
   { name: "Gerenciar Tags", href: "/tags", icon: Tags },
   { name: "Relatórios", href: "/reports", icon: FileText },

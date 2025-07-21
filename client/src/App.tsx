@@ -7,10 +7,21 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import AppLayout from "@/components/layout/app-layout";
 
+import CustomSearch from "@/components/search/custom-search";
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/search" component={() => (
+        <div className="container mx-auto p-6 max-w-6xl">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Busca de Menções</h1>
+            <p className="text-gray-600">Busque menções em tempo real na internet sobre qualquer termo</p>
+          </div>
+          <CustomSearch />
+        </div>
+      )} />
       <Route path="/mentions" component={() => <div>Página de Menções em desenvolvimento</div>} />
       <Route path="/sentiment" component={() => <div>Página de Análise de Sentimento em desenvolvimento</div>} />
       <Route path="/tags" component={() => <div>Página de Tags em desenvolvimento</div>} />

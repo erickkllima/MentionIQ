@@ -237,11 +237,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Collection/scraping
-  app.post("/api/collect", async (_req, res) => {
+  // Collection/scraping with custom search term
+  app.post("/api/collect", async (req, res) => {
     try {
-      const activeQueries = await storage.getActiveSearchQueries();
-      const queryStrings = activeQueries.map(q => q.query);
+      const { query } = req.body;
+      let queryStrings: string[] = [];
+      
+      if (query) {
+        // Use custom search term
+        queryStrings = [query];
+      } else {
+        // Use active search queries from database
+        const activeQueries = await storage.getActiveSearchQueries();
+        queryStrings = activeQueries.map(q => q.query);
+        
+        // If no active queries, use default
+        if (queryStrings.length === 0) {
+          queryStrings = ["nossa empresa"];
+        }
+      }
       
       const scrapedMentions = await scraper.collectFromSources(queryStrings);
       const createdMentions = [];
@@ -273,12 +287,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      const searchTerm = query || "consultas salvas";
       res.json({ 
-        message: `Coletadas ${createdMentions.length} novas menções`,
-        mentions: createdMentions 
+        message: `Coletadas ${createdMentions.length} novas menções para "${searchTerm}"`,
+        mentions: createdMentions,
+        query: searchTerm
       });
     } catch (error) {
+      console.error('Erro ao coletar menções:', error);
       res.status(500).json({ message: "Erro ao coletar menções" });
+    }
+  });
+
+  // Search preview route - doesn't save to database
+  app.post("/api/search-preview", async (req, res) => {
+    try {
+      const { query } = req.body;
+      
+      if (!query) {
+        return res.status(400).json({ message: "Termo de busca é obrigatório" });
+      }
+      
+      const scrapedMentions = await scraper.collectFromSources([query]);
+      
+      res.json({ 
+        results: scrapedMentions,
+        query: query,
+        count: scrapedMentions.length
+      });
+    } catch (error) {
+      console.error('Erro na busca:', error);
+      res.status(500).json({ message: "Erro ao realizar busca" });
     }
   });
 
