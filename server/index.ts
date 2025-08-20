@@ -1,8 +1,19 @@
+import "dotenv/config";
+import session from "express-session";
+import passport from "./auth";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+app.use(session({
+  secret: process.env.SESSION_SECRET || "minha_chave_super_secreta", // Troque por uma frase secreta depois!
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false } // Em produção use true se for HTTPS!
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -61,11 +72,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  server.listen(port, () => {
+  log(`serving on port ${port}`);
+});
 })();

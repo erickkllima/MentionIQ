@@ -9,6 +9,29 @@ import AppLayout from "@/components/layout/app-layout";
 
 import CustomSearch from "@/components/search/custom-search";
 
+import Register from "./pages/Register";
+// ... outros imports
+
+<Route path="/register" component={Register} />
+
+import Login from "./pages/Login";
+// ... outros imports
+
+<Route path="/login" component={Login} />
+
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
+// ... outros imports
+
+<Route
+  path="/"
+  component={() => (
+    <ProtectedRoute>
+      <Dashboard />
+    </ProtectedRoute>
+  )}
+/>
+
 function Router() {
   return (
     <Switch>
@@ -34,14 +57,16 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <AppLayout>
-          <Router />
-        </AppLayout>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <AppLayout>
+            <Router />
+          </AppLayout>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </AuthProvider>
   );
 }
 

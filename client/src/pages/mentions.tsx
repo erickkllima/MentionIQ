@@ -14,14 +14,17 @@ import type { Mention } from "@shared/schema";
 
 export default function Mentions() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [customResults, setCustomResults] = useState<Mention[]>([]);
   const [sentimentFilter, setSentimentFilter] = useState<string>("");
   const [sourceFilter, setSourceFilter] = useState<string>("");
   const { toast } = useToast();
 
+  // Query para menções já salvas no banco
   const { data: mentions, isLoading } = useQuery<Mention[]>({
     queryKey: ["/api/mentions", { sentiment: sentimentFilter, source: sourceFilter }],
   });
 
+  // Coleta geral
   const collectMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/collect"),
     onSuccess: () => {
@@ -41,10 +44,34 @@ export default function Mentions() {
     },
   });
 
-  const filteredMentions = mentions?.filter(mention =>
+  // Nova busca personalizada (preview)
+  const searchMutation = useMutation({
+    mutationFn: async (query: string) => {
+      return await apiRequest("POST", "/api/search-preview", { query });
+    },
+    onSuccess: (data) => {
+      setCustomResults(data);
+      toast({
+        title: "Busca concluída",
+        description: `${data.length} menções encontradas.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro na busca",
+        description: "Não foi possível realizar a busca. Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Decide qual lista mostrar (menções do banco ou busca personalizada)
+  const displayMentions = customResults.length > 0 ? customResults : mentions || [];
+
+  const filteredMentions = displayMentions.filter(mention =>
     mention.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
     mention.author?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  );
 
   const getSentimentColor = (sentiment: string | null) => {
     switch (sentiment) {
@@ -81,7 +108,12 @@ export default function Mentions() {
               <RefreshCw className={`h-4 w-4 ${collectMutation.isPending ? 'animate-spin' : ''}`} />
               <span>Coletar Agora</span>
             </Button>
-            <Button variant="outline" className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              className="flex items-center space-x-2"
+              onClick={() => searchMutation.mutate(searchTerm)}
+              disabled={searchMutation.isPending || !searchTerm}
+            >
               <Plus className="h-4 w-4" />
               <span>Nova Busca</span>
             </Button>
@@ -107,7 +139,7 @@ export default function Mentions() {
                 />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               </div>
-              
+
               <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtrar por sentimento" />
@@ -133,7 +165,11 @@ export default function Mentions() {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => {
+                setSentimentFilter("");
+                setSourceFilter("");
+                setCustomResults([]);
+              }}>
                 Limpar Filtros
               </Button>
             </div>
@@ -153,7 +189,7 @@ export default function Mentions() {
             </div>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {isLoading && !customResults.length ? (
               <div className="space-y-4">
                 {[...Array(5)].map((_, i) => (
                   <Skeleton key={i} className="h-32 w-full" />
@@ -162,27 +198,27 @@ export default function Mentions() {
             ) : filteredMentions.length > 0 ? (
               <div className="space-y-4">
                 {filteredMentions.map((mention) => (
-                  <div key={mention.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                  <div key={mention.id || mention.content} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <span className="text-sm font-medium text-gray-900">{mention.source}</span>
+                        <span className="text-sm font-medium text-gray-900">{mention.source || "Fonte desconhecida"}</span>
                         {mention.author && (
                           <span className="text-sm text-gray-500">por {mention.author}</span>
                         )}
                       </div>
                       <span className="text-xs text-gray-500">
-                        {formatDate(mention.publishedAt)}
+                        {mention.publishedAt ? formatDate(mention.publishedAt) : "Data não informada"}
                       </span>
                     </div>
-                    
+
                     <p className="text-gray-700 mb-3">{mention.content}</p>
-                    
+
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         {mention.sentiment && (
                           <Badge className={getSentimentColor(mention.sentiment)}>
                             {mention.sentiment === "positive" ? "Positivo" :
-                             mention.sentiment === "negative" ? "Negativo" : "Neutro"}
+                              mention.sentiment === "negative" ? "Negativo" : "Neutro"}
                             {mention.sentimentScore && (
                               <span className="ml-1">
                                 ({Math.round(mention.sentimentScore * 100)}%)
@@ -198,7 +234,7 @@ export default function Mentions() {
                           ))
                         )}
                       </div>
-                      
+
                       <div className="flex items-center space-x-2">
                         {!mention.isProcessed && (
                           <Button variant="outline" size="sm">
