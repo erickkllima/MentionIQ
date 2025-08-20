@@ -1,6 +1,15 @@
-node_modules
-dist
+# dependências
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+
+# build
+dist/
+build/
+
+# ambiente
+.env
+
+# sistema
 .DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
+Thumbs.db
