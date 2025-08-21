@@ -87,12 +87,4 @@ Abra um Pull Request 🚀
 
 Este projeto está sob a licença MIT. Veja o arquivo LICENSE
  para mais detalhes.
- 
----
 
-👉 Repare que deixei referências a **screenshots** (`docs/dashboard.png` e `docs/search.png`).  
-Você pode criar uma pasta `docs/` na raiz e salvar capturas do sistema lá para aparecer no README.
-
----
-
-Quer que eu já prepare também o **.gitignore** e um **LICENSE (MIT)** para deixar o repositório redondo?
