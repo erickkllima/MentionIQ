@@ -1,6 +1,6 @@
 // server/routes.ts
 import { Express, Request, Response } from "express";
-import * as storage from "./storage";
+import { storage } from "./storage";
 import { WebScraper } from "./services/scraper";
 
 export async function registerRoutes(app: Express) {
@@ -21,7 +21,8 @@ export async function registerRoutes(app: Express) {
       const mentions = await storage.getMentions();
       res.json(mentions);
     } catch (err) {
-      res.status(500).json({ error: "Erro ao buscar menções", details: err });
+      console.error("Erro detalhado em /api/mentions:", err);
+      res.status(500).json({ error: "Erro ao buscar menções" });
     }
   });
 
@@ -33,7 +34,8 @@ export async function registerRoutes(app: Express) {
       const stats = await storage.getDashboardStats();
       res.json(stats);
     } catch (err) {
-      res.status(500).json({ error: "Erro ao buscar estatísticas", details: err });
+      console.error("Erro detalhado em /api/dashboard:", err);
+      res.status(500).json({ error: "Erro ao buscar estatísticas" });
     }
   });
 
@@ -51,7 +53,8 @@ export async function registerRoutes(app: Express) {
       const count = await scraper.collectAndSave(queries[0]); // por enquanto, pega só a primeira
       res.json({ message: `Coleta finalizada`, collected: count });
     } catch (err) {
-      res.status(500).json({ error: "Erro na coleta", details: err });
+      console.error("Erro detalhado em /api/collect:", err);
+      res.status(500).json({ error: "Erro na coleta" });
     }
   });
 
@@ -69,7 +72,8 @@ export async function registerRoutes(app: Express) {
       const mentions = await scraper.searchMentions(query);
       res.json(mentions);
     } catch (err) {
-      res.status(500).json({ error: "Erro ao realizar busca", details: err });
+      console.error("Erro detalhado em /api/search-preview:", err);
+      res.status(500).json({ error: "Erro ao realizar busca" });
     }
   });
 

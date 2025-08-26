@@ -1,63 +1,139 @@
 // server/storage.ts
-import db from "./db"; 
-import { mentions } from "@shared/schema"; 
+import { db } from "./db";
+import {
+  mentions,
+  tags,
+  searchQueries,
+  reports,
+  type Mention,
+  type Tag,
+  type SearchQuery,
+  type Report,
+} from "../shared/schema";
 import { eq } from "drizzle-orm";
 
-// Tipo de uma menção
-export type Mention = {
-  id: number;
-  content: string;
-  source: string;
-  sourceUrl: string;
-  author: string | null;
-  publishedAt: Date;
-  sentiment: "positive" | "negative" | "neutral" | null;
-  sentimentScore: number | null;
-  tags: string[] | null;
-  isProcessed: boolean;
-  isStarred: boolean;
-};
+export class DatabaseStorage {
+  // =======================
+  // MENÇÕES
+  // =======================
 
-// Criar uma nova menção
-export async function createMention(data: Omit<Mention, "id">) {
-  const result = await db.insert(mentions).values(data).returning();
-  return result[0];
+  async getMentions(limit = 50): Promise<Mention[]> {
+    try {
+    const result: Mention[] = await db.select().from(mentions).limit(limit);
+    console.log(">>> getMentions result:", result);
+    return result;
+  } catch (err) {
+    console.error(">>> Erro em getMentions:", err);
+    throw err;
+  }
 }
 
-// Buscar todas as menções
-export async function getMentions() {
-  return db.select().from(mentions).all();
+  async createMention(newMention: Omit<Mention, "id">) {
+    return await db.insert(mentions).values(newMention);
+  }
+
+  async deleteMention(id: number) {
+    return await db.delete(mentions).where(eq(mentions.id, id));
+  }
+
+  // =======================
+  // TAGS
+  // =======================
+
+  async getTags(): Promise<Tag[]> {
+    return await db.select().from(tags);
+  }
+
+  async createTag(newTag: Omit<Tag, "id">) {
+    return await db.insert(tags).values(newTag);
+  }
+
+  async deleteTag(id: number) {
+    return await db.delete(tags).where(eq(tags.id, id));
+  }
+
+  // =======================
+  // SEARCH QUERIES
+  // =======================
+
+  async getSearchQueries(): Promise<SearchQuery[]> {
+    return await db.select().from(searchQueries);
+  }
+
+  async createSearchQuery(newQuery: Omit<SearchQuery, "id">) {
+    return await db.insert(searchQueries).values(newQuery);
+  }
+
+  async deleteSearchQuery(id: number) {
+    return await db.delete(searchQueries).where(eq(searchQueries.id, id));
+  }
+
+  // =======================
+  // REPORTS
+  // =======================
+
+  async getReports(): Promise<Report[]> {
+    return await db.select().from(reports);
+  }
+
+  async createReport(newReport: Omit<Report, "id">) {
+    return await db.insert(reports).values(newReport);
+  }
+
+  async deleteReport(id: number) {
+    return await db.delete(reports).where(eq(reports.id, id));
+  }
+
+  // =======================
+  // DASHBOARD
+  // =======================
+
+  async getDashboardStats() {
+    const allMentions = await db.select().from(mentions);
+
+    const positive = allMentions.filter(m => m.sentiment === "positive").length;
+    const negative = allMentions.filter(m => m.sentiment === "negative").length;
+    const neutral = allMentions.filter(m => m.sentiment === "neutral").length;
+
+    return {
+      totalMentions: allMentions.length,
+      positive,
+      negative,
+      neutral,
+    };
+  }
+
+  // =======================
+  // SEED DE TESTE
+  // =======================
+
+  async seedMentions() {
+    const existing = await db.select().from(mentions).limit(1);
+    if (existing.length > 0) {
+      console.log("Banco já tem menções, não precisa seed.");
+      return;
+    }
+
+    await db.insert(mentions).values([
+      {
+        content: "Primeira menção de teste",
+        source: "Twitter",
+        author: "@erick",
+        publishedAt: new Date().toISOString(),
+        sentiment: "positive",
+        sentimentScore: 0.9,
+        tags: JSON.stringify(["teste"]),
+        isProcessed: 1,
+        isStarred: 0,
+      }
+    ]);
+
+    console.log("Seed de menções criada com sucesso!");
+  }
 }
 
-// Buscar uma menção por ID
-export async function getMentionById(id: number) {
-  return db.select().from(mentions).where(eq(mentions.id, id)).get();
-}
+// Singleton export
+export const storage = new DatabaseStorage();
 
-// Atualizar uma menção
-export async function updateMention(id: number, data: Partial<Mention>) {
-  return db.update(mentions).set(data).where(eq(mentions.id, id)).run();
-}
-
-// Deletar uma menção
-export async function deleteMention(id: number) {
-  return db.delete(mentions).where(eq(mentions.id, id)).run();
-}
-
-// Estatísticas para o dashboard
-export async function getDashboardStats() {
-  const allMentions = await db.select().from(mentions).all();
-
-  const total = allMentions.length;
-  const positive = allMentions.filter(m => m.sentiment === "positive").length;
-  const negative = allMentions.filter(m => m.sentiment === "negative").length;
-  const neutral = allMentions.filter(m => m.sentiment === "neutral").length;
-
-  return {
-    total,
-    positive,
-    negative,
-    neutral,
-    engagementRate: total > 0 ? (positive + negative) / total : 0,
-  };
-}
+// roda o seed automaticamente
+storage.seedMentions();

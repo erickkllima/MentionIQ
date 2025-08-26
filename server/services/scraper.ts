@@ -1,3 +1,4 @@
+// server/services/scraper.ts
 import { analyzeSentiment } from "./openai";
 import { storage } from "../storage";
 import type { SentimentAnalysisResult } from "./openai";
@@ -131,9 +132,10 @@ export class WebScraper {
         await storage.createMention({
           content: m.content,
           source: m.source,
-          sourceUrl: m.sourceUrl,
-          author: m.author,
+          sourceUrl: m.sourceUrl ?? null,
+          author: m.author ?? null,
           publishedAt: m.publishedAt.toISOString(),
+          collectedAt: new Date().toISOString(),  // ✅ agora incluído
           sentiment: (sentimentResult.sentiment || "neutral") as "positive" | "neutral" | "negative",
           sentimentScore: sentimentResult.confidence ?? 0,
           tags: JSON.stringify([]),
