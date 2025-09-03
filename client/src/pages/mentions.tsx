@@ -13,13 +13,21 @@ export default function Mentions() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [newQuery, setNewQuery] = useState("");
   const [results, setResults] = useState<Mention[]>([]);
+  const [sentimentFilter, setSentimentFilter] = useState<string>("");
+  const [sourceFilter, setSourceFilter] = useState<string>("");
 
   const { toast } = useToast();
 
   // 🔹 Buscar todas as menções do banco
-  const { data: mentions } = useQuery<Mention[]>({
-    queryKey: ["/api/mentions"],
-  });
+  const { data: mentions, isLoading } = useQuery<Mention[]>({
+  queryKey: ["/api/mentions", { sentiment: sentimentFilter, source: sourceFilter }],
+  queryFn: async () => {
+    const res = await fetch("/api/mentions");
+    if (!res.ok) throw new Error("Erro ao buscar menções");
+    return res.json();
+  },
+});
+
 
   // 🔹 Mutação para coletar (salva no banco)
   const collectMutation = useMutation({
